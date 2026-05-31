@@ -50,11 +50,14 @@ jobs:
           fetch-depth: 0
 
       - name: Select Java IDL branch
+        id: select-java-idl-branch
         working-directory: idl-java-repo
         run: |
           if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
+            echo "branch_exists=true" >> "$GITHUB_OUTPUT"
             git checkout -B "$BRANCH_NAME" "origin/$BRANCH_NAME"
           else
+            echo "branch_exists=false" >> "$GITHUB_OUTPUT"
             git checkout -B "$BRANCH_NAME"
           fi
 
@@ -79,12 +82,20 @@ jobs:
 
       - name: Commit and push Java IDL repo
         working-directory: idl-java-repo
+        env:
+          JAVA_IDL_BRANCH_EXISTS: ${{ steps.select-java-idl-branch.outputs.branch_exists }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
 
           if git diff --cached --quiet; then
+            if [ "$JAVA_IDL_BRANCH_EXISTS" != "true" ]; then
+              git push origin "HEAD:$BRANCH_NAME"
+              echo "Created Java IDL branch $BRANCH_NAME with current generated state."
+              exit 0
+            fi
+
             echo "No Java IDL changes to push."
             exit 0
           fi
