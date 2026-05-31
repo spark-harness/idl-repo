@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package vesta.spark.user.v1;
+
+option go_package = "github.com/vesta/spark/idl/vesta/spark/user/v1;userv1pb";
+option java_multiple_files = true;
+option java_outer_classname = "PingProto";
+option java_package = "com.vesta.spark.user.v1";
+
+service PingService {
+  rpc Ping(PingRequest) returns (PingResponse);
+}
+
+message PingRequest {
+  string name = 1;
+}
+
+message PingResponse {
+  string message = 1;
+}
