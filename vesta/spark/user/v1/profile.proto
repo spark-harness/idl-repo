@@ -9,6 +9,8 @@ option java_package = "com.vesta.spark.user.v1";
 
 service ProfileService {
   rpc UpdateUsername(UpdateUsernameRequest) returns (UpdateUsernameResponse);
+  rpc DisableUser(DisableUserRequest) returns (DisableUserResponse);
+  rpc RestoreUser(RestoreUserRequest) returns (RestoreUserResponse);
 }
 
 message UpdateUsernameRequest {
@@ -19,4 +21,22 @@ message UpdateUsernameRequest {
 message UpdateUsernameResponse {
   string user_id = 1;
   string username = 2;
+}
+
+message DisableUserRequest {
+  string user_id = 1;
+}
+
+message RestoreUserRequest {
+  string user_id = 1;
+}
+
+message DisableUserResponse {
+  string user_id = 1;
+  bool enabled = 2;
+}
+
+message RestoreUserResponse {
+  string user_id = 1;
+  bool enabled = 2;
 }
