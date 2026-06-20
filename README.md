@@ -71,6 +71,27 @@ IDL_JAVA_REPO_TOKEN
 
 该 token 需要有 `spark-harness/idl-java-repo` 的写权限。`GITHUB_TOKEN` 默认只能写当前仓库，不能可靠地跨仓推送生成物仓。
 
+## Java 生成物发布
+
+GitHub Actions 工作流：`.github/workflows/publish-java-idl.yml`。
+
+发布规则：
+
+- RC 发布通过 `workflow_dispatch` 输入冻结的 `idl_ref` 和目标 `java_version`，也可以通过推送符合格式的 RC tag 触发。
+- formal 发布由 `idl-repo` SemVer tag push 触发。
+- 发布前检查 `spark-harness/idl-java-repo` Maven package 中目标版本是否已存在；已存在则失败。
+- RC version 最后一段 SHA 必须匹配解析后的 IDL commit 前缀；不匹配时发布失败。
+- 发布流程先 checkout `idl-java-repo` 作为生成物 Maven 工程，再从 `idl-repo` 指定 ref 执行 `buf generate`，最后临时写入目标 Maven version 并执行 `mvn -B deploy`。
+- 发布时会读取生成 Java 代码中的 protobuf gencode version，并确保发布 artifact 的 `protobuf-java` runtime 版本不低于 gencode version。
+
+仓库需要配置 secret：
+
+```text
+IDL_JAVA_REPO_TOKEN
+```
+
+该 token 需要有 `spark-harness/idl-java-repo` 的读权限和 GitHub Packages 写权限。
+
 ## Go 生成物同步
 
 GitHub Actions 工作流：`.github/workflows/sync-go-idl.yml`。
