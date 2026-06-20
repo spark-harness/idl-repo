@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package vesta.spark.applicant.v1;
+package vesta.lendora.applicant.v1;
 
-option go_package = "github.com/vesta/spark/idl/vesta/spark/applicant/v1;applicantv1pb";
+option go_package = "github.com/spark-harness/idl-go-repo/vesta/lendora/applicant/v1;applicantv1pb";
 option java_multiple_files = true;
 option java_outer_classname = "ApplicantAuthProto";
-option java_package = "com.vesta.spark.applicant.v1";
+option java_package = "com.vesta.lendora.applicant.v1";
 
 service ApplicantAuthService {
   rpc SendOtp(SendOtpRequest) returns (SendOtpResponse);
