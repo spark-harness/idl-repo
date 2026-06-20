@@ -1,0 +1,178 @@
+name: Publish Go IDL
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+      - "v*.*.*-rc.*"
+  workflow_dispatch:
+    inputs:
+      idl_ref:
+        description: "Frozen IDL ref to publish"
+        required: true
+        type: string
+      go_tag:
+        description: "Go module RC tag to create"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-go-idl-${{ github.event_name == 'workflow_dispatch' && inputs.go_tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  GO_IDL_REPOSITORY: spark-harness/idl-go-repo
+  GO_BASE_BRANCH: master
+
+jobs:
+  publish-go-idl:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve publish inputs
+        id: publish-inputs
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          TAG_NAME: ${{ github.ref_name }}
+          INPUT_IDL_REF: ${{ inputs.idl_ref }}
+          INPUT_GO_TAG: ${{ inputs.go_tag }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            if [[ ! "$INPUT_GO_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[A-Z][A-Z0-9]*-[0-9]+\.[0-9]{8}\.[0-9a-f]{7,40}$ ]]; then
+              echo "::error::RC tag must match vMAJOR.MINOR.PATCH-rc.TICKET.YYYYMMDD.IDL_SHA."
+              exit 1
+            fi
+            echo "idl_ref=$INPUT_IDL_REF" >> "$GITHUB_OUTPUT"
+            echo "go_tag=$INPUT_GO_TAG" >> "$GITHUB_OUTPUT"
+            echo "release_channel=rc" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "idl_ref=$TAG_NAME" >> "$GITHUB_OUTPUT"
+            echo "go_tag=$TAG_NAME" >> "$GITHUB_OUTPUT"
+            echo "release_channel=formal" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[A-Z][A-Z0-9]*-[0-9]+\.[0-9]{8}\.[0-9a-f]{7,40}$ ]]; then
+            echo "idl_ref=$TAG_NAME" >> "$GITHUB_OUTPUT"
+            echo "go_tag=$TAG_NAME" >> "$GITHUB_OUTPUT"
+            echo "release_channel=rc" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "::error::Publish tag must be SemVer vMAJOR.MINOR.PATCH or RC vMAJOR.MINOR.PATCH-rc.TICKET.YYYYMMDD.IDL_SHA."
+          exit 1
+
+      - name: Check Go IDL repo token
+        env:
+          IDL_GO_REPO_TOKEN: ${{ secrets.IDL_GO_REPO_TOKEN }}
+        run: |
+          if [ -z "$IDL_GO_REPO_TOKEN" ]; then
+            echo "::error::Missing secret IDL_GO_REPO_TOKEN with write access to $GO_IDL_REPOSITORY."
+            exit 1
+          fi
+
+      - name: Check target Go tag does not exist
+        env:
+          GO_TAG: ${{ steps.publish-inputs.outputs.go_tag }}
+          GH_TOKEN: ${{ secrets.IDL_GO_REPO_TOKEN }}
+        run: |
+          if git ls-remote --exit-code --tags "https://x-access-token:${GH_TOKEN}@github.com/${GO_IDL_REPOSITORY}.git" "refs/tags/$GO_TAG" >/dev/null 2>&1; then
+            echo "::error::Go IDL tag $GO_TAG already exists in $GO_IDL_REPOSITORY."
+            exit 1
+          fi
+
+      - name: Checkout IDL repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.publish-inputs.outputs.idl_ref }}
+          path: idl-repo
+
+      - name: Validate resolved IDL ref
+        id: resolved-idl
+        working-directory: idl-repo
+        env:
+          GO_TAG: ${{ steps.publish-inputs.outputs.go_tag }}
+          RELEASE_CHANNEL: ${{ steps.publish-inputs.outputs.release_channel }}
+        run: |
+          set -euo pipefail
+
+          idl_commit="$(git rev-parse HEAD)"
+          echo "idl_commit=$idl_commit" >> "$GITHUB_OUTPUT"
+
+          if [ "$RELEASE_CHANNEL" = "rc" ]; then
+            tag_sha="${GO_TAG##*.}"
+            if [[ "$idl_commit" != "$tag_sha"* ]]; then
+              echo "::error::RC tag suffix $tag_sha must match resolved IDL commit $idl_commit."
+              exit 1
+            fi
+          fi
+
+      - name: Checkout Go IDL repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.GO_IDL_REPOSITORY }}
+          token: ${{ secrets.IDL_GO_REPO_TOKEN }}
+          ref: ${{ env.GO_BASE_BRANCH }}
+          path: idl-go-repo
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: idl-go-repo/go.mod
+          cache-dependency-path: idl-go-repo/go.sum
+
+      - name: Set up buf
+        uses: bufbuild/buf-setup-action@v1
+
+      - name: Generate Go IDL
+        working-directory: idl-repo
+        run: buf generate --template buf.gen.go.yaml
+
+      - name: Sync generated Go files
+        run: |
+          set -euo pipefail
+          rm -rf idl-go-repo/vesta
+          cp -R .generated/idl-go/. idl-go-repo/
+
+      - name: Verify Go IDL repo
+        working-directory: idl-go-repo
+        run: |
+          go mod tidy
+          go test ./...
+
+      - name: Commit and push Go IDL tag
+        working-directory: idl-go-repo
+        env:
+          GO_TAG: ${{ steps.publish-inputs.outputs.go_tag }}
+          IDL_REF: ${{ steps.publish-inputs.outputs.idl_ref }}
+          IDL_COMMIT: ${{ steps.resolved-idl.outputs.idl_commit }}
+          RELEASE_CHANNEL: ${{ steps.publish-inputs.outputs.release_channel }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(idl): publish go generated code for ${IDL_COMMIT::12}"
+            if [ "$RELEASE_CHANNEL" = "formal" ]; then
+              git push origin "HEAD:$GO_BASE_BRANCH"
+            fi
+          fi
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$GO_TAG" >/dev/null 2>&1; then
+            echo "::error::Go IDL tag $GO_TAG already exists in $GO_IDL_REPOSITORY."
+            exit 1
+          fi
+
+          git tag "$GO_TAG"
+          git push origin "refs/tags/$GO_TAG"

@@ -14,7 +14,3 @@ plugins:
     out: ../.generated/idl-go
     opt:
       - paths=source_relative
-  - remote: buf.build/protocolbuffers/java
-    out: ../idl-java-repo/src/main/java
-  - remote: buf.build/grpc/java
-    out: ../idl-java-repo/src/main/grpc-java
