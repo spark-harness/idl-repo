@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*.*.*"
+      - "v*.*.*-rc.*"
   workflow_dispatch:
     inputs:
       idl_ref:
@@ -53,13 +54,22 @@ jobs:
             exit 0
           fi
 
-          if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Formal publish requires SemVer tag vMAJOR.MINOR.PATCH."
-            exit 1
+          if [[ "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "idl_ref=$TAG_NAME" >> "$GITHUB_OUTPUT"
+            echo "go_tag=$TAG_NAME" >> "$GITHUB_OUTPUT"
+            echo "release_channel=formal" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
-          echo "idl_ref=$TAG_NAME" >> "$GITHUB_OUTPUT"
-          echo "go_tag=$TAG_NAME" >> "$GITHUB_OUTPUT"
-          echo "release_channel=formal" >> "$GITHUB_OUTPUT"
+
+          if [[ "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[A-Z][A-Z0-9]*-[0-9]+\.[0-9]{8}\.[0-9a-f]{7,40}$ ]]; then
+            echo "idl_ref=$TAG_NAME" >> "$GITHUB_OUTPUT"
+            echo "go_tag=$TAG_NAME" >> "$GITHUB_OUTPUT"
+            echo "release_channel=rc" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "::error::Publish tag must be SemVer vMAJOR.MINOR.PATCH or RC vMAJOR.MINOR.PATCH-rc.TICKET.YYYYMMDD.IDL_SHA."
+          exit 1
 
       - name: Check Go IDL repo token
         env:
