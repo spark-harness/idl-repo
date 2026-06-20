@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package vesta.spark.applicant.v1;
+
+option go_package = "github.com/vesta/spark/idl/vesta/spark/applicant/v1;applicantv1pb";
+option java_multiple_files = true;
+option java_outer_classname = "ApplicantAuthProto";
+option java_package = "com.vesta.spark.applicant.v1";
+
+service ApplicantAuthService {
+  rpc SendOtp(SendOtpRequest) returns (SendOtpResponse);
+  rpc VerifyOtp(VerifyOtpRequest) returns (VerifyOtpResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+}
+
+message SendOtpRequest {
+  string country_code = 1;
+  string phone = 2;
+  string idempotency_key = 3;
+}
+
+message SendOtpResponse {
+  string challenge_id = 1;
+  int32 expires_in_sec = 2;
+  int32 resend_after_sec = 3;
+}
+
+message VerifyOtpRequest {
+  string challenge_id = 1;
+  string code = 2;
+  string idempotency_key = 3;
+}
+
+message VerifyOtpResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  string applicant_id = 3;
+  int32 expires_in_sec = 4;
+  int32 refresh_expires_in_sec = 5;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+  string idempotency_key = 2;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  int32 expires_in_sec = 2;
+}
