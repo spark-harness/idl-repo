@@ -106,4 +106,5 @@ GitHub Actions 工作流：`.github/workflows/publish-go-idl.yml`。
 - RC 发布通过 `workflow_dispatch` 输入冻结的 `idl_ref` 和目标 `go_tag`，也可以通过推送符合格式的 RC tag 触发。
 - formal 发布由 `idl-repo` SemVer tag push 触发。
 - 发布前检查 `spark-harness/idl-go-repo` 远端 tag 是否已存在；已存在则失败。
+- RC tag 最后一段 SHA 必须匹配解析后的 IDL commit 前缀；不匹配时发布失败。
 - 发布流程使用 `buf.gen.go.yaml` 生成到 staging，随后同步到 `idl-go-repo`，执行 `go mod tidy` 和 `go test ./...`。

@@ -96,6 +96,26 @@ jobs:
           ref: ${{ steps.publish-inputs.outputs.idl_ref }}
           path: idl-repo
 
+      - name: Validate resolved IDL ref
+        id: resolved-idl
+        working-directory: idl-repo
+        env:
+          GO_TAG: ${{ steps.publish-inputs.outputs.go_tag }}
+          RELEASE_CHANNEL: ${{ steps.publish-inputs.outputs.release_channel }}
+        run: |
+          set -euo pipefail
+
+          idl_commit="$(git rev-parse HEAD)"
+          echo "idl_commit=$idl_commit" >> "$GITHUB_OUTPUT"
+
+          if [ "$RELEASE_CHANNEL" = "rc" ]; then
+            tag_sha="${GO_TAG##*.}"
+            if [[ "$idl_commit" != "$tag_sha"* ]]; then
+              echo "::error::RC tag suffix $tag_sha must match resolved IDL commit $idl_commit."
+              exit 1
+            fi
+          fi
+
       - name: Checkout Go IDL repo
         uses: actions/checkout@v4
         with:
@@ -135,6 +155,7 @@ jobs:
         env:
           GO_TAG: ${{ steps.publish-inputs.outputs.go_tag }}
           IDL_REF: ${{ steps.publish-inputs.outputs.idl_ref }}
+          IDL_COMMIT: ${{ steps.resolved-idl.outputs.idl_commit }}
           RELEASE_CHANNEL: ${{ steps.publish-inputs.outputs.release_channel }}
         run: |
           git config user.name "github-actions[bot]"
@@ -142,7 +163,7 @@ jobs:
           git add -A
 
           if ! git diff --cached --quiet; then
-            git commit -m "chore(idl): publish go generated code for $IDL_REF"
+            git commit -m "chore(idl): publish go generated code for ${IDL_COMMIT::12}"
             if [ "$RELEASE_CHANNEL" = "formal" ]; then
               git push origin "HEAD:$GO_BASE_BRANCH"
             fi
