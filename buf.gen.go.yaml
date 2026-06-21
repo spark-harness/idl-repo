@@ -6,11 +6,11 @@ managed:
     - file_option: go_package_prefix
       value: github.com/spark-harness/idl-go-repo
 plugins:
-  - remote: buf.build/protocolbuffers/go
+  - remote: buf.build/protocolbuffers/go:v1.36.11
     out: ../.generated/idl-go
     opt:
       - paths=source_relative
-  - remote: buf.build/grpc/go
+  - remote: buf.build/grpc/go:v1.6.2
     out: ../.generated/idl-go
     opt:
       - paths=source_relative
