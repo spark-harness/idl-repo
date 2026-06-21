@@ -20,6 +20,10 @@ idl-repo/
 ├── buf.gen.yaml
 ├── buf.gen.go.yaml
 └── vesta/
+    ├── lendora/
+    │   └── applicant/
+    │       └── v1/
+    │           └── auth.proto
     └── spark/
         └── user/
             └── v1/
