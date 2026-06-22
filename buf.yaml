@@ -1,9 +1,14 @@
 version: v2
 modules:
   - path: .
+deps:
+  - buf.build/googleapis/googleapis
 lint:
   use:
     - STANDARD
+  ignore_only:
+    PACKAGE_DIRECTORY_MATCH:
+      - vesta/lendora/fides-bff/v1/auth.proto
 breaking:
   use:
     - FILE

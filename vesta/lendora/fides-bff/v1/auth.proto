@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package vesta.lendora.fides_bff.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/spark-harness/idl-go-repo/vesta/lendora/fides-bff/v1;fidesbffv1pb";
+option java_multiple_files = true;
+option java_outer_classname = "FidesBffAuthProto";
+option java_package = "com.vesta.lendora.fidesbff.v1";
+
+service FidesBffAuthService {
+  rpc SendOtp(SendOtpRequest) returns (SendOtpResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/otp:send"
+      body: "*"
+    };
+  }
+
+  rpc VerifyOtp(VerifyOtpRequest) returns (VerifyOtpResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/otp:verify"
+      body: "*"
+    };
+  }
+
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/token:refresh"
+      body: "*"
+    };
+  }
+}
+
+message SendOtpRequest {
+  string country_code = 1;
+  string phone = 2;
+}
+
+message SendOtpResponse {
+  string challenge_id = 1;
+  int32 expires_in_sec = 2;
+  int32 resend_after_sec = 3;
+}
+
+message VerifyOtpRequest {
+  string challenge_id = 1;
+  string code = 2;
+}
+
+message VerifyOtpResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  string applicant_id = 3;
+  int32 expires_in_sec = 4;
+  int32 refresh_expires_in_sec = 5;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  int32 expires_in_sec = 2;
+}
