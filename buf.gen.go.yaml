@@ -8,15 +8,18 @@ managed:
     - file_option: go_package_prefix
       value: github.com/spark-harness/idl-go-repo
 plugins:
-  - local: protoc-gen-go
+  - remote: buf.build/protocolbuffers/go:v1.36.11
     out: ../.generated/idl-go
     opt:
       - paths=source_relative
-  - local: protoc-gen-go-grpc
+  - remote: buf.build/grpc/go:v1.6.2
     out: ../.generated/idl-go
     opt:
       - paths=source_relative
-  - local: protoc-gen-go-http
+  - local:
+      - go
+      - run
+      - github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@v2.0.0-20260404020628-f149714c1d54
     out: ../.generated/idl-go
     opt:
       - paths=source_relative
