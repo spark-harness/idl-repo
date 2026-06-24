@@ -1,4 +1,4 @@
 version: v2
 plugins:
-  - local: protoc-gen-openapi
+  - remote: buf.build/community/google-gnostic-openapi
     out: ../.generated/openapi
