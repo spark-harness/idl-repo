@@ -1,4 +1,4 @@
 version: v2
 plugins:
   - local: protoc-gen-openapi
-    out: openapi/fides-bff
+    out: ../.generated/openapi

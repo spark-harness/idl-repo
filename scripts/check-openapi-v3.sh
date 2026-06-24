@@ -2,16 +2,26 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+OPENAPI_REPO="${OPENAPI_REPO:-$(cd "$ROOT/../idl-openapi-repo" && pwd)}"
+PROTO_PATH="${PROTO_PATH:-vesta/lendora/fides-bff/v1/auth.proto}"
+OPENAPI_PATH="${OPENAPI_PATH:-vesta/lendora/fides-bff/v1/openapi.yaml}"
+GENERATED="$ROOT/../.generated/openapi/openapi.yaml"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 cd "$ROOT"
-buf generate --template buf.gen.openapi.yaml --path vesta/lendora/fides-bff/v1/auth.proto
-cp openapi/fides-bff/openapi.yaml "$TMP/openapi.yaml"
-if git ls-files --error-unmatch openapi/fides-bff/openapi.yaml >/dev/null 2>&1; then
-  git checkout -- openapi/fides-bff/openapi.yaml
+buf generate --template buf.gen.openapi.yaml --path "$PROTO_PATH"
+install -d "$OPENAPI_REPO/$(dirname "$OPENAPI_PATH")"
+cp "$GENERATED" "$OPENAPI_REPO/$OPENAPI_PATH"
+cp "$OPENAPI_REPO/$OPENAPI_PATH" "$TMP/openapi.yaml"
+cd "$OPENAPI_REPO"
+if git ls-files --error-unmatch "$OPENAPI_PATH" >/dev/null 2>&1; then
+  git checkout -- "$OPENAPI_PATH"
 else
-  rm -f openapi/fides-bff/openapi.yaml
+  rm -f "$OPENAPI_PATH"
 fi
-buf generate --template buf.gen.openapi.yaml --path vesta/lendora/fides-bff/v1/auth.proto
-diff -u openapi/fides-bff/openapi.yaml "$TMP/openapi.yaml"
+cd "$ROOT"
+buf generate --template buf.gen.openapi.yaml --path "$PROTO_PATH"
+install -d "$OPENAPI_REPO/$(dirname "$OPENAPI_PATH")"
+cp "$GENERATED" "$OPENAPI_REPO/$OPENAPI_PATH"
+diff -u "$OPENAPI_REPO/$OPENAPI_PATH" "$TMP/openapi.yaml"

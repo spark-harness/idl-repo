@@ -6,19 +6,21 @@
 
 - `.proto` 文件。
 - `buf.yaml` v2 工作区配置。
-- `buf.gen.yaml` v2 生成配置。
-- `buf.gen.go.yaml` v2 Go 专用生成配置。
+- `buf.gen.go.yaml` v2 Go 生成配置。
+- `buf.gen.java.yaml` v2 Java 生成配置。
+- `buf.gen.openapi.yaml` v2 OpenAPI 生成配置。
 - `buf.lock`。
 
-生成代码不提交到本仓库；消费者在各自构建流程中生成，或按 `buf.gen.yaml` 输出到仓库外目录。
+生成代码不提交到本仓库；消费者在各自构建流程中按产物模板输出到仓库外目录。
 
 ## 目录
 
 ```text
 idl-repo/
 ├── buf.yaml
-├── buf.gen.yaml
 ├── buf.gen.go.yaml
+├── buf.gen.java.yaml
+├── buf.gen.openapi.yaml
 └── vesta/
     ├── lendora/
     │   └── applicant/
@@ -34,7 +36,8 @@ idl-repo/
 
 ```text
 buf lint
-buf generate
+buf generate --template buf.gen.go.yaml
+buf generate --template buf.gen.java.yaml
 buf breaking --against '.git#branch=master'
 ```
 
@@ -43,12 +46,17 @@ buf breaking --against '.git#branch=master'
 ## 生成输出
 
 - Go message / gRPC staging：`../.generated/idl-go`
+- Go HTTP binding staging：`../.generated/idl-go`
 - Java message：`../idl-java-repo/src/main/java`
 - Java gRPC stub：`../idl-java-repo/src/main/grpc-java`
+- OpenAPI staging：`../.generated/openapi/openapi.yaml`
+- OpenAPI generated repo：`../idl-openapi-repo/vesta/lendora/fides-bff/v1/openapi.yaml`
 
-Java 生成物不进入 `business-repo`。Pipeline 在 `idl-repo` 执行 `buf generate`，编译 `../idl-java-repo`，再把 `idl-java-repo` 推送到指定远端仓库的指定分支。业务服务只依赖该生成物仓发布的 Maven artifact。
+Java 生成物不进入 `business-repo`。Pipeline 在 `idl-repo` 执行 `buf generate --template buf.gen.java.yaml`，编译 `../idl-java-repo`，再把 `idl-java-repo` 推送到指定远端仓库的指定分支。业务服务只依赖该生成物仓发布的 Maven artifact。
 
 Go 生成物不直接写入 `idl-go-repo` 仓库根目录。Pipeline 使用 `buf.gen.go.yaml` 生成到 staging 目录，再同步生成文件到 `idl-go-repo`。这样可以保留生成仓的 `.git`、`go.mod`、`go.sum` 和 README，避免 `clean: true` 清理仓库元数据。
+
+OpenAPI 生成物不进入 `idl-repo`。Pipeline 使用 `buf.gen.openapi.yaml` 生成到 staging，再按 proto 路径同步到 `idl-openapi-repo`。TS SDK Pipeline 必须先 clone 已推送的 `idl-openapi-repo` 同名分支，再使用固定 `openapitools/openapi-generator-cli:v7.14.0` 镜像生成 `idl-ts-repo`。
 
 ## Java 生成物同步
 
@@ -56,7 +64,7 @@ GitHub Actions 工作流：`.github/workflows/sync-java-idl.yml`。
 
 触发条件：
 
-- 任意分支 push 修改 `.proto`、`buf.yaml`、`buf.gen.yaml` 或工作流自身。
+- 任意分支 push 修改 `.proto`、`buf.yaml`、Java 生成模板或工作流自身。
 - 手动 `workflow_dispatch`。
 
 同步规则：
@@ -64,7 +72,7 @@ GitHub Actions 工作流：`.github/workflows/sync-java-idl.yml`。
 - 当前仓库：`spark-harness/idl-repo`
 - Java 生成物仓：`spark-harness/idl-java-repo`
 - 目标分支：与 `idl-repo` 触发分支同名
-- 生成命令：`buf generate`
+- 生成命令：`buf generate --template buf.gen.java.yaml`
 - 编译命令：在 `idl-java-repo` 执行 `mvn -B test`
 
 仓库需要配置 secret：
@@ -85,7 +93,7 @@ GitHub Actions 工作流：`.github/workflows/publish-java-idl.yml`。
 - formal 发布由 `idl-repo` SemVer tag push 触发。
 - 发布前检查 `spark-harness/idl-java-repo` Maven package 中目标版本是否已存在；已存在则失败。
 - RC version 最后一段 SHA 必须匹配解析后的 IDL commit 前缀；不匹配时发布失败。
-- 发布流程先 checkout `idl-java-repo` 作为生成物 Maven 工程，再从 `idl-repo` 指定 ref 执行 `buf generate`，最后临时写入目标 Maven version 并执行 `mvn -B deploy`。
+- 发布流程先 checkout `idl-java-repo` 作为生成物 Maven 工程，再从 `idl-repo` 指定 ref 执行 `buf generate --template buf.gen.java.yaml`，最后临时写入目标 Maven version 并执行 `mvn -B deploy`。
 - 发布时会读取生成 Java 代码中的 protobuf gencode version，并确保发布 artifact 的 `protobuf-java` runtime 版本不低于 gencode version。
 
 仓库需要配置 secret：
@@ -102,7 +110,7 @@ GitHub Actions 工作流：`.github/workflows/sync-go-idl.yml`。
 
 触发条件：
 
-- 任意分支 push 修改 `.proto`、`buf.yaml`、`buf.gen.yaml`、`buf.gen.go.yaml` 或工作流自身。
+- 任意分支 push 修改 `.proto`、`buf.yaml`、Go 生成模板或工作流自身。
 - 手动 `workflow_dispatch`。
 
 同步规则：
@@ -112,7 +120,7 @@ GitHub Actions 工作流：`.github/workflows/sync-go-idl.yml`。
 - 目标分支：与 `idl-repo` 触发分支同名
 - 生成命令：`buf generate --template buf.gen.go.yaml`
 - 校验命令：在 `idl-go-repo` 执行 `go mod tidy` 和 `go test ./...`
-- 生成内容：Go message 与 Go gRPC stub
+- 生成内容：Go message、Go gRPC stub 与 Go HTTP binding。
 
 仓库需要配置 secret：
 
