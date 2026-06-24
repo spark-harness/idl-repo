@@ -1,0 +1,12 @@
+version: v2
+clean: true
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/spark-harness/idl-go-repo
+plugins:
+  - remote: buf.build/protocolbuffers/java:v35.1
+    out: ../idl-java-repo/src/main/java
+  - remote: buf.build/grpc/java:v1.82.0
+    out: ../idl-java-repo/src/main/grpc-java
