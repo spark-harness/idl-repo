@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package vesta.lendora.applicant.v1;
+
+option go_package = "github.com/spark-harness/idl-go-repo/vesta/lendora/applicant/v1;applicantv1pb";
+option java_multiple_files = true;
+option java_outer_classname = "ApplicantProfileProto";
+option java_package = "com.vesta.lendora.applicant.v1";
+
+service ApplicantProfileService {
+  rpc UpsertIdentityProfile(UpsertIdentityProfileRequest) returns (UpsertIdentityProfileResponse);
+  rpc GetIdentityProfile(GetIdentityProfileRequest) returns (GetIdentityProfileResponse);
+}
+
+enum Nationality {
+  NATIONALITY_UNSPECIFIED = 0;
+  NATIONALITY_CHINESE = 1;
+  NATIONALITY_HONG_KONG = 2;
+  NATIONALITY_BRITISH = 3;
+  NATIONALITY_INDIAN = 4;
+  NATIONALITY_FILIPINO = 5;
+  NATIONALITY_INDONESIAN = 6;
+  NATIONALITY_PAKISTANI = 7;
+  NATIONALITY_AMERICAN = 8;
+  NATIONALITY_AUSTRALIAN = 9;
+  NATIONALITY_CANADIAN = 10;
+  NATIONALITY_OTHER = 11;
+}
+
+message IdentityProfile {
+  string applicant_id = 1;
+  string hkid_body = 2;
+  string hkid_check_digit = 3;
+  string first_name = 4;
+  string last_name = 5;
+  string chinese_name = 6;
+  Nationality nationality = 7;
+  string date_of_birth = 8;
+}
+
+message UpsertIdentityProfileRequest {
+  string applicant_id = 1;
+  string hkid_body = 2;
+  string hkid_check_digit = 3;
+  string first_name = 4;
+  string last_name = 5;
+  string chinese_name = 6;
+  Nationality nationality = 7;
+  string date_of_birth = 8;
+}
+
+message UpsertIdentityProfileResponse {
+  IdentityProfile profile = 1;
+}
+
+message GetIdentityProfileRequest {
+  string applicant_id = 1;
+}
+
+message GetIdentityProfileResponse {
+  bool empty = 1;
+  IdentityProfile profile = 2;
+}

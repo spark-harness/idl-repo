@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package vesta.lendora.origination.v1;
+
+option go_package = "github.com/spark-harness/idl-go-repo/vesta/lendora/origination/v1;originationv1pb";
+option java_multiple_files = true;
+option java_outer_classname = "OriginationDraftProto";
+option java_package = "com.vesta.lendora.origination.v1";
+
+service OriginationDraftService {
+  rpc AdvanceApplicationStep(AdvanceApplicationStepRequest) returns (AdvanceApplicationStepResponse);
+}
+
+enum ApplicationStep {
+  APPLICATION_STEP_UNSPECIFIED = 0;
+  APPLICATION_STEP_LOAN_REQUEST = 1;
+  APPLICATION_STEP_IDENTITY_INFORMATION = 2;
+}
+
+message AdvanceApplicationStepRequest {
+  string applicant_id = 1;
+  string application_id = 2;
+  ApplicationStep target_step = 3;
+}
+
+message AdvanceApplicationStepResponse {
+  string application_id = 1;
+  ApplicationStep current_step = 2;
+}

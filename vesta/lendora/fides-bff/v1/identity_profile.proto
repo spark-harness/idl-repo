@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package vesta.lendora.fides_bff.v1;
+
+import "google/api/annotations.proto";
+import "vesta/lendora/applicant/v1/profile.proto";
+import "vesta/lendora/origination/v1/draft.proto";
+
+option go_package = "github.com/spark-harness/idl-go-repo/vesta/lendora/fides-bff/v1;fidesbffv1pb";
+option java_multiple_files = true;
+option java_outer_classname = "FidesBffIdentityProfileProto";
+option java_package = "com.vesta.lendora.fidesbff.v1";
+
+service FidesBffIdentityProfileService {
+  rpc UpsertIdentityProfile(UpsertIdentityProfileRequest) returns (UpsertIdentityProfileResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/me/identity-profile"
+      body: "*"
+    };
+  }
+
+  rpc GetIdentityProfile(GetIdentityProfileRequest) returns (GetIdentityProfileResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/me/identity-profile"
+    };
+  }
+}
+
+message IdentityProfile {
+  string hkid_body = 1;
+  string hkid_check_digit = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string chinese_name = 5;
+  vesta.lendora.applicant.v1.Nationality nationality = 6;
+  string date_of_birth = 7;
+}
+
+message UpsertIdentityProfileRequest {
+  string application_id = 1;
+  IdentityProfile profile = 2;
+}
+
+message UpsertIdentityProfileResponse {
+  IdentityProfile profile = 1;
+  vesta.lendora.origination.v1.ApplicationStep current_step = 2;
+}
+
+message GetIdentityProfileRequest {
+  string application_id = 1;
+}
+
+message GetIdentityProfileResponse {
+  bool empty = 1;
+  IdentityProfile profile = 2;
+}

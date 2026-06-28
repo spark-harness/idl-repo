@@ -9,6 +9,7 @@ lint:
   ignore_only:
     PACKAGE_DIRECTORY_MATCH:
       - vesta/lendora/fides-bff/v1/auth.proto
+      - vesta/lendora/fides-bff/v1/identity_profile.proto
 breaking:
   use:
     - FILE
