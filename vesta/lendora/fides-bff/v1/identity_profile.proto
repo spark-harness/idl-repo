@@ -12,21 +12,21 @@ option java_outer_classname = "FidesBffIdentityProfileProto";
 option java_package = "com.vesta.lendora.fidesbff.v1";
 
 service FidesBffIdentityProfileService {
-  rpc UpsertIdentityProfile(UpsertIdentityProfileRequest) returns (UpsertIdentityProfileResponse) {
+  rpc UpsertIdentityProfile(FidesBffIdentityProfileServiceUpsertIdentityProfileRequest) returns (FidesBffIdentityProfileServiceUpsertIdentityProfileResponse) {
     option (google.api.http) = {
       put: "/api/v1/me/identity-profile"
       body: "*"
     };
   }
 
-  rpc GetIdentityProfile(GetIdentityProfileRequest) returns (GetIdentityProfileResponse) {
+  rpc GetIdentityProfile(FidesBffIdentityProfileServiceGetIdentityProfileRequest) returns (FidesBffIdentityProfileServiceGetIdentityProfileResponse) {
     option (google.api.http) = {
       get: "/api/v1/me/identity-profile"
     };
   }
 }
 
-message IdentityProfile {
+message FidesBffIdentityProfile {
   string hkid_body = 1;
   string hkid_check_digit = 2;
   string first_name = 3;
@@ -36,21 +36,21 @@ message IdentityProfile {
   string date_of_birth = 7;
 }
 
-message UpsertIdentityProfileRequest {
+message FidesBffIdentityProfileServiceUpsertIdentityProfileRequest {
   string application_id = 1;
-  IdentityProfile profile = 2;
+  FidesBffIdentityProfile profile = 2;
 }
 
-message UpsertIdentityProfileResponse {
-  IdentityProfile profile = 1;
+message FidesBffIdentityProfileServiceUpsertIdentityProfileResponse {
+  FidesBffIdentityProfile profile = 1;
   vesta.lendora.origination.v1.ApplicationStep current_step = 2;
 }
 
-message GetIdentityProfileRequest {
+message FidesBffIdentityProfileServiceGetIdentityProfileRequest {
   string application_id = 1;
 }
 
-message GetIdentityProfileResponse {
+message FidesBffIdentityProfileServiceGetIdentityProfileResponse {
   bool empty = 1;
-  IdentityProfile profile = 2;
+  FidesBffIdentityProfile profile = 2;
 }
